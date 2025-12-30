@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>404 - الصفحة غير موجودة | WebPkimo</title>
+    <link rel="icon" type="image/png" href="icon-192.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;800&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        :root {
+            --primary: #a855f7;
+            --bg: #0a0a0f;
+            --card-bg: rgba(255, 255, 255, 0.03);
+        }
+        
+        body {
+            font-family: 'Cairo', sans-serif;
+            background: var(--bg);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            overflow: hidden;
+        }
+        
+        .ambient-light {
+            position: fixed;
+            width: 600px;
+            height: 600px;
+            background: radial-gradient(circle, rgba(168, 85, 247, 0.15), transparent 70%);
+            top: -200px;
+            right: -200px;
+            pointer-events: none;
+            animation: float 8s ease-in-out infinite;
+        }
+        
+        .ambient-light-2 {
+            position: fixed;
+            width: 500px;
+            height: 500px;
+            background: radial-gradient(circle, rgba(59, 130, 246, 0.1), transparent 70%);
+            bottom: -150px;
+            left: -150px;
+            pointer-events: none;
+            animation: float 10s ease-in-out infinite reverse;
+        }
+        
+        @keyframes float {
+            0%, 100% { transform: translate(0, 0); }
+            50% { transform: translate(30px, 30px); }
+        }
+        
+        .container {
+            text-align: center;
+            padding: 40px;
+            position: relative;
+            z-index: 1;
+        }
+        
+        .error-code {
+            font-size: clamp(100px, 25vw, 180px);
+            font-weight: 800;
+            background: linear-gradient(135deg, var(--primary), #3b82f6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            line-height: 1;
+            margin-bottom: 20px;
+            text-shadow: 0 0 80px rgba(168, 85, 247, 0.3);
+        }
+        
+        .error-icon {
+            font-size: 80px;
+            margin-bottom: 20px;
+            animation: bounce 2s infinite;
+        }
+        
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+        
+        h1 {
+            font-size: clamp(1.5rem, 4vw, 2rem);
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: #e2e8f0;
+        }
+        
+        p {
+            font-size: 1.1rem;
+            color: #94a3b8;
+            margin-bottom: 30px;
+            max-width: 400px;
+            margin-inline: auto;
+        }
+        
+        .home-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            padding: 14px 32px;
+            background: linear-gradient(135deg, var(--primary), #7c3aed);
+            color: #fff;
+            text-decoration: none;
+            border-radius: 12px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 20px rgba(168, 85, 247, 0.3);
+        }
+        
+        .home-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 30px rgba(168, 85, 247, 0.4);
+        }
+        
+        .home-btn svg {
+            transition: transform 0.3s;
+        }
+        
+        .home-btn:hover svg {
+            transform: translateX(-5px);
+        }
+    </style>
+</head>
+<body>
+    <div class="ambient-light"></div>
+    <div class="ambient-light-2"></div>
+    
+    <div class="container">
+        <div class="error-icon">🔍</div>
+        <div class="error-code">404</div>
+        <h1>الصفحة غير موجودة</h1>
+        <p>عذراً، الصفحة التي تبحث عنها غير موجودة أو تم نقلها إلى مكان آخر.</p>
+        <a href="index.html" class="home-btn">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M19 12H5M12 19l-7-7 7-7"/>
+            </svg>
+            العودة للرئيسية
+        </a>
+    </div>
+</body>
+</html>

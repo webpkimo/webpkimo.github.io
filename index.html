@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title> WebPkimo | المحول الذكي</title>
+    <meta name="description" content="أداة تحويل صور WebP بتصميم عصري وذكاء اصطناعي في الأداء.">
+    
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://YOUR_USERNAME.github.io/webpimg/">
+    <meta property="og:title" content="WebPkimo | المحول الذكي لصور WebP">
+    <meta property="og:description" content="حوّل صورك إلى WebP بسرعة فائقة وخصوصية تامة. أداة مجانية تعمل في المتصفح بدون رفع ملفاتك.">
+    <meta property="og:image" content="https://YOUR_USERNAME.github.io/webpimg/icon-512.png">
+
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:url" content="https://YOUR_USERNAME.github.io/webpimg/">
+    <meta name="twitter:title" content="WebPkimo | المحول الذكي لصور WebP">
+    <meta name="twitter:description" content="حوّل صورك إلى WebP بسرعة فائقة وخصوصية تامة. أداة مجانية تعمل في المتصفح.">
+    <meta name="twitter:image" content="https://YOUR_USERNAME.github.io/webpimg/icon-512.png">
+    
+    <!-- PWA -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#0f0c29">
+    <link rel="apple-touch-icon" href="icon-192.png">
+    <link rel="icon" type="image/png" href="icon-192.png">
+
+    <link rel="stylesheet" href="style.css?v=12.0">
+    
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;800&family=Poppins:wght@600;800&display=swap" rel="stylesheet">
+    
+    <!-- Libs -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+</head>
+<body>
+
+    <div class="ambient-light"></div>
+    <div class="ambient-light-2"></div>
+
+    <div id="settings-overlay" class="panel-overlay hidden" onclick="app.toggleSettings()"></div>
+    
+    <div id="app" class="app-container">
+        
+        <!-- Header -->
+        <header class="app-header">
+            <div class="logo">
+                <img src="icon-192.png" alt="WebPkimo Logo" width="28" height="28" style="border-radius: 6px;">
+                <span style="font-family: 'Poppins', sans-serif; letter-spacing: 1px;">webpkimo</span>
+            </div>
+            <nav class="nav-links">
+                <button onclick="app.toggleSettings()" class="nav-btn" title="الإعدادات">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.38a2 2 0 0 0-.73-2.73l-.15-.1a2 2 0 0 1-1-1.72v-.51a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                </button>
+            </nav>
+        </header>
+
+        <!-- Main Card -->
+        <main class="main-card">
+            
+            <div id="drop-zone" class="drop-zone">
+                <div class="drop-visual">
+                    <div class="icon-stack">
+                        <div class="card-icon c1"></div>
+                        <div class="card-icon c2"></div>
+                        <div class="card-icon c3"></div>
+                    </div>
+                </div>
+                <h1>تحويل صور الي WebP</h1>
+                <p>قم بسحب الصور هنا أو اضغط للاختيار. يمكنك مراجعة الصور وحذف ما لا تريده قبل البدء.</p>
+                <div class="badges">
+                    <span class="badge">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path></svg>
+                        معاينة مباشرة
+                    </span>
+                    <span class="badge">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                        سرعة فائقة
+                    </span>
+                    <span class="badge">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+                        خصوصية تامة
+                    </span>
+                </div>
+                <button class="cta-btn" onclick="document.getElementById('file-input').click()">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-left:8px"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+                    اختيار الملفات
+                </button>
+                <input type="file" id="file-input" multiple accept="image/*" hidden>
+            </div>
+
+            <!-- Settings Modal -->
+            <div id="settings-panel" class="settings-panel hidden">
+                <div class="panel-header">
+                    <h3>إعدادات التحويل</h3>
+                    <button class="close-btn" onclick="app.toggleSettings()">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                    </button>
+                </div>
+                
+                <div class="setting-row">
+                    <label><span>الجودة</span> <span id="q-val" style="color:var(--primary)">80%</span></label>
+                    <input type="range" id="quality" min="0.1" max="1" step="0.05" value="0.8">
+                </div>
+
+                <div class="setting-row">
+                    <label>
+                        <span>تغيير الأبعاد</span>
+                        <input type="checkbox" id="resize-check">
+                    </label>
+                    <div id="resize-opts" class="sub-settings disabled">
+                        <div style="display:flex; gap:10px">
+                            <input type="number" id="width" placeholder="العرض">
+                            <input type="number" id="height" placeholder="الارتفاع">
+                        </div>
+                        <label style="font-size:0.9rem; font-weight:400"><input type="checkbox" id="ratio" checked> الحفاظ على النسبة</label>
+                    </div>
+                </div>
+
+                <div class="setting-row">
+                    <label>
+                        <span>إضافة علامة مائية</span>
+                        <input type="checkbox" id="wm-check">
+                    </label>
+                    <div id="wm-opts" class="sub-settings disabled">
+                        <input type="text" id="wm-text" placeholder="نص العلامة المائية">
+                        <div style="display:flex; gap:10px">
+                            <select id="wm-pos">
+                                <option value="br">أسفل يمين</option>
+                                <option value="bl">أسفل يسار</option>
+                                <option value="c">وسط</option>
+                            </select>
+                            <input type="color" id="wm-color" value="#ffffff" style="flex:0 0 50px; padding:0; height:42px">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </main>
+
+        <!-- Action Bar -->
+        <div id="action-bar" class="action-bar hidden">
+            <div class="status-text">
+                <span id="status-msg">تم اختيار 5 صور</span>
+                <div id="progress-bar" class="progress-bar hidden"><div class="fill"></div></div>
+            </div>
+            <div class="actions-group" style="display: flex; gap: 10px;">
+                <button id="cancel-btn" class="cancel-btn hidden" onclick="app.cancelSelection()">
+                    إلغاء
+                </button>
+                <button id="main-action-btn" class="main-action-btn">
+                    <span class="btn-text">بدء التحويل</span>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+                </button>
+            </div>
+        </div>
+        
+        <!-- Results Grid -->
+        <div id="results-grid" class="results-grid"></div>
+
+        <!-- Info Section -->
+        <section class="info-section">
+            
+            <div class="info-card">
+                <h2>ما هي صور WebP؟</h2>
+                <p>
+                    هي نوع صور جديد من جوجل. ميزتها أنها <strong>صغيرة جداً في الحجم</strong> (توفر مساحة في هاتفك أو موقعك) 
+                    ولكنها تحافظ على <strong>نفس جودة ونقاء الصورة</strong> الأصلية.
+                    <br>
+                    باستخدامك لـ WebP، ستكون مواقعك أسرع وصورك أسهل في المشاركة!
+                </p>
+            </div>
+
+            <div class="features-grid">
+                <div class="feature-item">
+                    <div class="f-icon">
+                        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="1.5"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path></svg>
+                    </div>
+                    <h3>أداء خارق</h3>
+                    <p>أسرع أداة تحويل في المتصفح. لا حاجة لرفع الملفات، كل شيء يتم في جهازك.</p>
+                </div>
+                <div class="feature-item">
+                    <div class="f-icon">
+                        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="1.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+                    </div>
+                    <h3>أمان تام</h3>
+                    <p>صورك لا تغادر جهازك أبداً. الخصوصية هي أولويتنا القصوى.</p>
+                </div>
+                <div class="feature-item">
+                    <div class="f-icon">
+                        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="1.5"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+                    </div>
+                    <h3>جودة ذكية</h3>
+                    <p>خوارزميات ذكية للحفاظ على أفضل جودة ممكنة بأقل حجم.</p>
+                </div>
+            </div>
+        </section>
+
+    </div>
+
+    <!-- Footer -->
+    <footer class="app-footer">
+        <div class="footer-links">
+            <a href="privacy.html">الخصوصية</a>
+            <span class="sep">•</span>
+            <a href="terms.html">الشروط</a>
+            <span class="sep">•</span>
+            <a href="contact.html">اتصل بنا</a>
+        </div>
+        <p>© 2025 Aura WebP.جميع جقوق محفوضة صنع بكل حب.</p>
+    </footer>
+
+    <!-- Minimal Notification -->
+    <div id="toast" class="toast"></div>
+
+    <script src="script.js?v=12.0"></script>
+    <script>
+        if(navigator.serviceWorker) {
+            navigator.serviceWorker.getRegistrations().then(function(registrations) {
+                for(let registration of registrations) {
+                    registration.unregister();
+                }
+            });
+        }
+        // navigator.serviceWorker.register('sw.js'); // Disabled temporarily to kill cache
+    </script>
+</body>
+</html>
