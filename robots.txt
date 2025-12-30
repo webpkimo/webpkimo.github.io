@@ -1,0 +1,8 @@
+# Robots.txt for WebPkimo
+# https://webpkimo.github.io
+
+User-agent: *
+Allow: /
+
+# Sitemap
+Sitemap: https://webpkimo.github.io/sitemap.xml
