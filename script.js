@@ -2,7 +2,149 @@ const app = {
     state: {
         files: [],      // Array of { id, file, url, status: 'pending'|'done', result: null }
         isProcessing: false,
-        supportsWebP: null // Will be detected on init
+        supportsWebP: null, // Will be detected on init
+        isInAppBrowser: false // Will detect Facebook/Telegram/Instagram in-app browsers
+    },
+    
+    // Detect if running inside an in-app browser (Facebook, Telegram, Instagram, etc.)
+    detectInAppBrowser() {
+        const ua = navigator.userAgent || navigator.vendor || window.opera;
+        
+        // Facebook In-App Browser
+        if (ua.includes('FBAN') || ua.includes('FBAV') || ua.includes('FB_IAB')) {
+            return { isInApp: true, app: 'Facebook' };
+        }
+        
+        // Instagram In-App Browser
+        if (ua.includes('Instagram')) {
+            return { isInApp: true, app: 'Instagram' };
+        }
+        
+        // Telegram In-App Browser (various identifiers)
+        if (ua.includes('Telegram') || ua.includes('TelegramBot')) {
+            return { isInApp: true, app: 'Telegram' };
+        }
+        
+        // Twitter/X In-App Browser
+        if (ua.includes('Twitter') || ua.includes('TwitterAndroid')) {
+            return { isInApp: true, app: 'Twitter' };
+        }
+        
+        // Snapchat In-App Browser
+        if (ua.includes('Snapchat')) {
+            return { isInApp: true, app: 'Snapchat' };
+        }
+        
+        // LinkedIn In-App Browser
+        if (ua.includes('LinkedInApp')) {
+            return { isInApp: true, app: 'LinkedIn' };
+        }
+        
+        // WeChat In-App Browser
+        if (ua.includes('MicroMessenger')) {
+            return { isInApp: true, app: 'WeChat' };
+        }
+        
+        // Line In-App Browser
+        if (ua.includes('Line/')) {
+            return { isInApp: true, app: 'Line' };
+        }
+        
+        // Generic WebView detection (Android)
+        if (ua.includes('wv') && ua.includes('Android')) {
+            return { isInApp: true, app: 'التطبيق' };
+        }
+        
+        return { isInApp: false, app: null };
+    },
+    
+    // Show in-app browser warning banner
+    showInAppBrowserWarning(appName) {
+        const banner = document.createElement('div');
+        banner.id = 'inapp-banner';
+        banner.className = 'inapp-browser-banner';
+        banner.innerHTML = `
+            <div class="inapp-content">
+                <div class="inapp-icon">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <line x1="12" y1="8" x2="12" y2="12"></line>
+                        <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                    </svg>
+                </div>
+                <div class="inapp-text">
+                    <strong>أنت تستخدم متصفح ${appName}</strong>
+                    <p>لتحويل الصور بشكل صحيح، يرجى فتح الرابط في المتصفح الحقيقي:</p>
+                    <ol>
+                        <li>اضغط على <strong>⋮</strong> أو <strong>⋯</strong> (القائمة)</li>
+                        <li>اختر <strong>"فتح في المتصفح"</strong> أو <strong>"Open in Browser"</strong></li>
+                    </ol>
+                </div>
+                <button class="inapp-close" onclick="app.hideInAppBanner()" title="إغلاق">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
+            </div>
+            <button class="inapp-copy-btn" onclick="app.copyLinkToClipboard()">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                </svg>
+                نسخ الرابط
+            </button>
+        `;
+        
+        // Insert at the top of the page
+        document.body.insertBefore(banner, document.body.firstChild);
+        
+        // Insert at the top of the page
+        document.body.insertBefore(banner, document.body.firstChild);
+    },
+    
+    
+    hideInAppBanner() {
+        const banner = document.getElementById('inapp-banner');
+        if (banner) {
+            banner.classList.add('banner-closing');
+            setTimeout(() => {
+                banner.remove();
+                document.body.classList.remove('has-inapp-banner');
+            }, 300);
+        }
+    },
+    
+    copyLinkToClipboard() {
+        const url = window.location.href;
+        
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(url).then(() => {
+                this.showToast('✓ تم نسخ الرابط! الصقه في المتصفح');
+            }).catch(() => {
+                this.fallbackCopyLink(url);
+            });
+        } else {
+            this.fallbackCopyLink(url);
+        }
+    },
+    
+    fallbackCopyLink(url) {
+        const textArea = document.createElement('textarea');
+        textArea.value = url;
+        textArea.style.position = 'fixed';
+        textArea.style.left = '-9999px';
+        document.body.appendChild(textArea);
+        textArea.select();
+        
+        try {
+            document.execCommand('copy');
+            this.showToast('✓ تم نسخ الرابط! الصقه في المتصفح');
+        } catch (e) {
+            this.showToast('الرابط: ' + url);
+        }
+        
+        document.body.removeChild(textArea);
     },
     
     // Check if browser supports WebP export via canvas
@@ -37,7 +179,17 @@ const app = {
     },
 
     async init() {
-        // Check WebP support first
+        // Check for in-app browser first (Facebook, Telegram, Instagram, etc.)
+        const inAppCheck = this.detectInAppBrowser();
+        this.state.isInAppBrowser = inAppCheck.isInApp;
+        
+        if (inAppCheck.isInApp) {
+            // Show warning banner for in-app browsers
+            this.showInAppBrowserWarning(inAppCheck.app);
+            document.body.classList.add('has-inapp-banner');
+        }
+        
+        // Check WebP support
         this.state.supportsWebP = await this.checkWebPSupport();
         
         if (!this.state.supportsWebP) {
