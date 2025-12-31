@@ -51,7 +51,7 @@ const app = {
         }
         
         // Generic WebView detection (Android)
-        if (ua.includes('wv') && ua.includes('Android')) {
+        if (ua.includes('wv') && ua.includes('Android') && !ua.includes('Chrome/')) {
             return { isInApp: true, app: 'التطبيق' };
         }
         
@@ -96,8 +96,8 @@ const app = {
             </button>
         `;
         
-        // Insert at the top of the page
-        document.body.insertBefore(banner, document.body.firstChild);
+        // Prevent duplicate banners
+        if (document.getElementById('inapp-banner')) return;
         
         // Insert at the top of the page
         document.body.insertBefore(banner, document.body.firstChild);
@@ -150,18 +150,29 @@ const app = {
     // Check if browser supports WebP export via canvas
     checkWebPSupport() {
         return new Promise((resolve) => {
-            const canvas = document.createElement('canvas');
-            canvas.width = 1;
-            canvas.height = 1;
-            
-            // Try to export as WebP
-            canvas.toBlob((blob) => {
-                if (blob && blob.type === 'image/webp') {
-                    resolve(true);
-                } else {
+            try {
+                const canvas = document.createElement('canvas');
+                canvas.width = 1;
+                canvas.height = 1;
+                
+                if (!canvas.toBlob) {
+                    // Very old browser or restricted environment
                     resolve(false);
+                    return;
                 }
-            }, 'image/webp', 0.8);
+
+                // Try to export as WebP
+                canvas.toBlob((blob) => {
+                    if (blob && blob.type === 'image/webp') {
+                        resolve(true);
+                    } else {
+                        resolve(false);
+                    }
+                }, 'image/webp', 0.8);
+            } catch (e) {
+                console.warn('WebP Support Check Failed:', e);
+                resolve(false);
+            }
         });
     },
     
@@ -179,58 +190,72 @@ const app = {
     },
 
     async init() {
-        // Check for in-app browser first (Facebook, Telegram, Instagram, etc.)
-        const inAppCheck = this.detectInAppBrowser();
-        this.state.isInAppBrowser = inAppCheck.isInApp;
-        
-        if (inAppCheck.isInApp) {
-            // Show warning banner for in-app browsers
-            this.showInAppBrowserWarning(inAppCheck.app);
-            document.body.classList.add('has-inapp-banner');
+        try {
+            // Check for in-app browser first (Facebook, Telegram, Instagram, etc.)
+            const inAppCheck = this.detectInAppBrowser();
+            this.state.isInAppBrowser = inAppCheck.isInApp;
+            
+            if (inAppCheck.isInApp) {
+                // Show warning banner for in-app browsers
+                this.showInAppBrowserWarning(inAppCheck.app);
+                document.body.classList.add('has-inapp-banner');
+            }
+            
+            // Check WebP support
+            this.state.supportsWebP = await this.checkWebPSupport();
+            
+            if (!this.state.supportsWebP) {
+                // Show warning for Safari/iOS users
+                this.showToast('متصفحك لا يدعم WebP. سيتم التحويل إلى PNG بدلاً من ذلك.', 5000);
+            }
+        } catch (e) {
+            console.error('Core init failed:', e);
         }
         
-        // Check WebP support
-        this.state.supportsWebP = await this.checkWebPSupport();
-        
-        if (!this.state.supportsWebP) {
-            // Show warning for Safari/iOS users
-            this.showToast('متصفحك لا يدعم WebP. سيتم التحويل إلى PNG بدلاً من ذلك.', 5000);
+        // Essential event listeners (Wrap in try to avoid complete failure)
+        try {
+            // Drag Drop interactions
+            this.ui.dropZone.addEventListener('click', (e) => {
+                if(e.target.closest('button')) return;
+                this.ui.fileInput.click();
+            });
+            
+            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                this.ui.dropZone.addEventListener(eventName, preventDefaults, false);
+            });
+            
+            function preventDefaults(e) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+
+            this.ui.dropZone.addEventListener('drop', (e) => this.addFiles(e.dataTransfer.files));
+            this.ui.fileInput.addEventListener('change', e => this.addFiles(e.target.files));
+            
+            // Settings Toggles
+            document.getElementById('resize-check').addEventListener('change', e => {
+                const opts = document.getElementById('resize-opts');
+                if (opts) opts.classList.toggle('disabled', !e.target.checked);
+            });
+            document.getElementById('wm-check').addEventListener('change', e => {
+                const opts = document.getElementById('wm-opts');
+                if (opts) opts.classList.toggle('disabled', !e.target.checked);
+            });
+            document.getElementById('quality').addEventListener('input', e => {
+                const val = document.getElementById('q-val');
+                if (val) val.textContent = Math.round(e.target.value * 100) + '%';
+            });
+
+            // Main Button Logic
+            if (this.ui.actionBtn) {
+                this.ui.actionBtn.addEventListener('click', () => this.handleMainAction());
+            }
+
+            // PWA Installation
+            this.initPWA();
+        } catch (e) {
+            console.error('Events init failed:', e);
         }
-        
-        // Drag Drop interactions
-        this.ui.dropZone.addEventListener('click', (e) => {
-            if(e.target.closest('button')) return;
-            this.ui.fileInput.click();
-        });
-        
-        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-            this.ui.dropZone.addEventListener(eventName, preventDefaults, false);
-        });
-        
-        function preventDefaults(e) {
-            e.preventDefault();
-            e.stopPropagation();
-        }
-
-        this.ui.dropZone.addEventListener('drop', (e) => this.addFiles(e.dataTransfer.files));
-        this.ui.fileInput.addEventListener('change', e => this.addFiles(e.target.files));
-        
-        // Settings Toggles
-        document.getElementById('resize-check').addEventListener('change', e => {
-            document.getElementById('resize-opts').classList.toggle('disabled', !e.target.checked);
-        });
-        document.getElementById('wm-check').addEventListener('change', e => {
-            document.getElementById('wm-opts').classList.toggle('disabled', !e.target.checked);
-        });
-        document.getElementById('quality').addEventListener('input', e => {
-            document.getElementById('q-val').textContent = Math.round(e.target.value * 100) + '%';
-        });
-
-        // Main Button Logic
-        this.ui.actionBtn.addEventListener('click', () => this.handleMainAction());
-
-        // PWA Installation
-        this.initPWA();
     },
 
     initPWA() {

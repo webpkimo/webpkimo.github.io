@@ -81,7 +81,18 @@ body {
 
 @keyframes drift {
     0% { transform: translate(0, 0); }
-    100% { transform: translate(20px, 40px); }
+    100% { transform: translate(15px, 25px); }
+}
+
+@media (max-width: 640px) {
+    .ambient-light, .ambient-light-2 {
+        filter: blur(40px); /* Lighter blur for mobile GPUs */
+        opacity: 0.6;
+    }
+    @keyframes drift {
+        0% { transform: translate(0, 0); }
+        100% { transform: translate(10px, 15px); }
+    }
 }
 
 /* App Container */
@@ -945,7 +956,7 @@ body.has-inapp-banner {
     }
     
     body.has-inapp-banner {
-        padding-top: 220px;
+        padding-top: 240px; /* Adjusted for better visibility */
     }
 }
 
