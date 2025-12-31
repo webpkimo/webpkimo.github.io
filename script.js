@@ -1,7 +1,26 @@
 const app = {
     state: {
         files: [],      // Array of { id, file, url, status: 'pending'|'done', result: null }
-        isProcessing: false
+        isProcessing: false,
+        supportsWebP: null // Will be detected on init
+    },
+    
+    // Check if browser supports WebP export via canvas
+    checkWebPSupport() {
+        return new Promise((resolve) => {
+            const canvas = document.createElement('canvas');
+            canvas.width = 1;
+            canvas.height = 1;
+            
+            // Try to export as WebP
+            canvas.toBlob((blob) => {
+                if (blob && blob.type === 'image/webp') {
+                    resolve(true);
+                } else {
+                    resolve(false);
+                }
+            }, 'image/webp', 0.8);
+        });
     },
     
     ui: {
@@ -17,7 +36,15 @@ const app = {
         toast: document.getElementById('toast')
     },
 
-    init() {
+    async init() {
+        // Check WebP support first
+        this.state.supportsWebP = await this.checkWebPSupport();
+        
+        if (!this.state.supportsWebP) {
+            // Show warning for Safari/iOS users
+            this.showToast('متصفحك لا يدعم WebP. سيتم التحويل إلى PNG بدلاً من ذلك.', 5000);
+        }
+        
         // Drag Drop interactions
         this.ui.dropZone.addEventListener('click', (e) => {
             if(e.target.closest('button')) return;
@@ -60,7 +87,7 @@ const app = {
         if(!list.length) return;
         
         const MAX_FILES = 100;
-        let incoming = Array.from(list).filter(f => f.type.match(/image\/(png|jpeg|jpg)/));
+        let incoming = Array.from(list).filter(f => f.type && f.type.startsWith('image/'));
         
         const currentCount = this.state.files.length;
         if (currentCount + incoming.length > MAX_FILES) {
@@ -244,6 +271,7 @@ const app = {
                 item.status = 'done';
                 item.resultBlob = result.blob;
                 item.resultUrl = result.url;
+                item.resultExt = result.ext || '.webp';
                 item.stats = result.stats;
                 
                 this.updateCardToDone(item, result);
@@ -260,66 +288,123 @@ const app = {
     },
 
     convert(file, s) {
+        const self = this; // Save reference to avoid closure issues
+        
         return new Promise((resolve, reject) => {
             const img = new Image();
             const url = URL.createObjectURL(file);
             
-            img.onload = () => {
-                URL.revokeObjectURL(url); 
-                
-                const cvs = document.createElement('canvas');
-                let w = img.width, h = img.height;
+            // Set crossOrigin for CORS compatibility
+            img.crossOrigin = 'anonymous';
+            
+            img.onload = function() {
+                try {
+                    URL.revokeObjectURL(url); 
+                    
+                    const cvs = document.createElement('canvas');
+                    let w = img.width, h = img.height;
 
-                // Resize Logic
-                if (s.resize && (s.w || s.h)) {
-                    if (s.r) {
-                        const r = w/h;
-                        if(s.w) { w = parseInt(s.w); h = w/r; }
-                        else if(s.h) { h = parseInt(s.h); w = h*r; }
-                    } else {
-                        if(s.w) w = parseInt(s.w);
-                        if(s.h) h = parseInt(s.h);
+                    // Mobile memory protection: limit max dimensions
+                    const MAX_DIMENSION = 4096;
+                    if (w > MAX_DIMENSION || h > MAX_DIMENSION) {
+                        const ratio = Math.min(MAX_DIMENSION / w, MAX_DIMENSION / h);
+                        w = Math.floor(w * ratio);
+                        h = Math.floor(h * ratio);
                     }
-                }
-                
-                cvs.width = w; cvs.height = h;
-                const ctx = cvs.getContext('2d');
-                ctx.drawImage(img, 0, 0, w, h);
 
-                // Watermark
-                if (s.wm && s.wmTxt) {
-                    ctx.font = `bold ${w*0.05}px sans-serif`;
-                    ctx.fillStyle = s.wmCol;
-                    ctx.shadowBlur = 5; ctx.shadowColor="rgba(0,0,0,0.5)";
-                    const metric = ctx.measureText(s.wmTxt);
-                    let x=20, y=h-20;
-                    if(s.wmPos === 'br') { x=w-metric.width-20; y=h-20; }
-                    else if(s.wmPos === 'c') { x=(w-metric.width)/2; y=h/2; }
-                    else if(s.wmPos === 'bl') { x=20; y=h-20; }
-                    ctx.fillText(s.wmTxt, x, y);
-                }
-
-                cvs.toBlob(blob => {
-                    if(!blob) return reject('Conversion failed');
-                    
-                    const resUrl = URL.createObjectURL(blob);
-                    const saved = ((file.size - blob.size) / file.size * 100).toFixed(0);
-                    
-                    resolve({
-                        blob: blob,
-                        url: resUrl,
-                        stats: {
-                            orig: this.formatBytes(file.size),
-                            new: this.formatBytes(blob.size),
-                            saved: saved > 0 ? saved : 0
+                    // Resize Logic
+                    if (s.resize && (s.w || s.h)) {
+                        if (s.r) {
+                            const r = w/h;
+                            if(s.w) { w = parseInt(s.w); h = Math.floor(w/r); }
+                            else if(s.h) { h = parseInt(s.h); w = Math.floor(h*r); }
+                        } else {
+                            if(s.w) w = parseInt(s.w);
+                            if(s.h) h = parseInt(s.h);
                         }
-                    });
-                }, 'image/webp', s.q);
+                    }
+                    
+                    // Ensure dimensions are valid
+                    w = Math.max(1, Math.floor(w));
+                    h = Math.max(1, Math.floor(h));
+                    
+                    cvs.width = w; 
+                    cvs.height = h;
+                    const ctx = cvs.getContext('2d');
+                    
+                    if (!ctx) {
+                        reject('فشل إنشاء Canvas context');
+                        return;
+                    }
+                    
+                    ctx.drawImage(img, 0, 0, w, h);
+
+                    // Watermark
+                    if (s.wm && s.wmTxt) {
+                        ctx.font = `bold ${Math.max(12, w*0.05)}px sans-serif`;
+                        ctx.fillStyle = s.wmCol;
+                        ctx.shadowBlur = 5; 
+                        ctx.shadowColor = "rgba(0,0,0,0.5)";
+                        const metric = ctx.measureText(s.wmTxt);
+                        let x = 20, y = h - 20;
+                        if(s.wmPos === 'br') { x = w - metric.width - 20; y = h - 20; }
+                        else if(s.wmPos === 'c') { x = (w - metric.width) / 2; y = h / 2; }
+                        else if(s.wmPos === 'bl') { x = 20; y = h - 20; }
+                        ctx.fillText(s.wmTxt, x, y);
+                    }
+
+                    // Use WebP if supported, otherwise fall back to PNG
+                    const outputFormat = self.state.supportsWebP ? 'image/webp' : 'image/png';
+                    const outputExt = self.state.supportsWebP ? '.webp' : '.png';
+                    
+                    // Use toDataURL as fallback if toBlob fails (better mobile compatibility)
+                    try {
+                        cvs.toBlob(function(blob) {
+                            if (!blob) {
+                                // Fallback to toDataURL method
+                                try {
+                                    const dataUrl = cvs.toDataURL(outputFormat, s.q);
+                                    const byteString = atob(dataUrl.split(',')[1]);
+                                    const mimeType = dataUrl.split(',')[0].split(':')[1].split(';')[0];
+                                    const ab = new ArrayBuffer(byteString.length);
+                                    const ia = new Uint8Array(ab);
+                                    for (let i = 0; i < byteString.length; i++) {
+                                        ia[i] = byteString.charCodeAt(i);
+                                    }
+                                    blob = new Blob([ab], { type: mimeType });
+                                } catch (e) {
+                                    reject('فشل التحويل: ' + e.message);
+                                    return;
+                                }
+                            }
+                            
+                            const resUrl = URL.createObjectURL(blob);
+                            const saved = ((file.size - blob.size) / file.size * 100).toFixed(0);
+                            
+                            resolve({
+                                blob: blob,
+                                url: resUrl,
+                                ext: outputExt,
+                                stats: {
+                                    orig: self.formatBytes(file.size),
+                                    new: self.formatBytes(blob.size),
+                                    saved: saved > 0 ? saved : 0
+                                }
+                            });
+                        }, outputFormat, s.q);
+                    } catch (e) {
+                        reject('فشل التحويل: ' + e.message);
+                    }
+                } catch (e) {
+                    reject('خطأ في معالجة الصورة: ' + e.message);
+                }
             };
-            img.onerror = () => {
+            
+            img.onerror = function() {
                 URL.revokeObjectURL(url);
-                reject('Image load error');
+                reject('فشل تحميل الصورة');
             };
+            
             img.src = url;
         });
     },
@@ -378,7 +463,8 @@ const app = {
         if(item && item.resultUrl) {
             const a = document.createElement('a');
             a.href = item.resultUrl;
-            a.download = item.file.name.replace(/\.[^.]+$/, '') + '.webp';
+            const ext = item.resultExt || (this.state.supportsWebP ? '.webp' : '.png');
+            a.download = item.file.name.replace(/\.[^.]+$/, '') + ext;
             a.click();
         }
     },
@@ -391,7 +477,8 @@ const app = {
         doneFiles.forEach(p => {
              const el = document.getElementById(`card-${p.id}`);
              if(el && el.style.display !== 'none') {
-                 zip.file(p.file.name.replace(/\.[^.]+$/, '') + '.webp', p.resultBlob);
+                 const ext = p.resultExt || (this.state.supportsWebP ? '.webp' : '.png');
+                 zip.file(p.file.name.replace(/\.[^.]+$/, '') + ext, p.resultBlob);
              }
         });
         
