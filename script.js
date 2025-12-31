@@ -228,6 +228,44 @@ const app = {
 
         // Main Button Logic
         this.ui.actionBtn.addEventListener('click', () => this.handleMainAction());
+
+        // PWA Installation
+        this.initPWA();
+    },
+
+    initPWA() {
+        let deferredPrompt;
+        const installBtn = document.getElementById('install-btn');
+
+        window.addEventListener('beforeinstallprompt', (e) => {
+            // Prevent Chrome 67 and earlier from automatically showing the prompt
+            e.preventDefault();
+            // Stash the event so it can be triggered later.
+            deferredPrompt = e;
+            // Update UI notify the user they can install the PWA
+            if(installBtn) installBtn.classList.remove('hidden');
+        });
+
+        if(installBtn) {
+            installBtn.addEventListener('click', async () => {
+                if (!deferredPrompt) return;
+                // Show the prompt
+                deferredPrompt.prompt();
+                // Wait for the user to respond to the prompt
+                const { outcome } = await deferredPrompt.userChoice;
+                if (outcome === 'accepted') {
+                    console.log('User accepted the install prompt');
+                }
+                deferredPrompt = null;
+                installBtn.classList.add('hidden');
+            });
+        }
+
+        window.addEventListener('appinstalled', (evt) => {
+            console.log('App successfully installed');
+            if(installBtn) installBtn.classList.add('hidden');
+            this.showToast('✓ تم تثبيت التطبيق بنجاح!');
+        });
     },
 
     toggleSettings() {
