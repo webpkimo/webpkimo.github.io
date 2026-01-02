@@ -992,6 +992,14 @@ body.has-inapp-banner {
 .ad-mobile { display: none; }
 .ad-square { display: flex; margin-bottom: 3rem; } /* Always visible, more space */
 
+/* Native Ad Specifics */
+.ad-native {
+    display: block !important; /* Native ads need block flow */
+    width: 100%;
+    text-align: center;
+    overflow: visible !important; /* Let it expand if needed */
+}
+
 @media (max-width: 768px) {
     .ad-desktop { display: none; }
     .ad-mobile { display: flex; }
