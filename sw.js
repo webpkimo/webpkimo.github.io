@@ -1,4 +1,4 @@
-const CACHE_NAME = 'webp-converter-v13';
+const CACHE_NAME = 'webp-converter-v14';
 const ASSETS = [
     './',
     './index.html',
