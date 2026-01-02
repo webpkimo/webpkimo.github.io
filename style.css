@@ -990,6 +990,7 @@ body.has-inapp-banner {
 
 .ad-desktop { display: flex; }
 .ad-mobile { display: none; }
+.ad-square { display: flex; margin-bottom: 3rem; } /* Always visible, more space */
 
 @media (max-width: 768px) {
     .ad-desktop { display: none; }

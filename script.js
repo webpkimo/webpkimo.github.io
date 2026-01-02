@@ -572,43 +572,68 @@ const app = {
                     const outputFormat = self.state.supportsWebP ? 'image/webp' : 'image/png';
                     const outputExt = self.state.supportsWebP ? '.webp' : '.png';
                     
-                    // Use toDataURL as fallback if toBlob fails (better mobile compatibility)
-                    try {
-                        cvs.toBlob(function(blob) {
-                            if (!blob) {
-                                // Fallback to toDataURL method
-                                try {
-                                    const dataUrl = cvs.toDataURL(outputFormat, s.q);
-                                    const byteString = atob(dataUrl.split(',')[1]);
-                                    const mimeType = dataUrl.split(',')[0].split(':')[1].split(';')[0];
-                                    const ab = new ArrayBuffer(byteString.length);
-                                    const ia = new Uint8Array(ab);
-                                    for (let i = 0; i < byteString.length; i++) {
-                                        ia[i] = byteString.charCodeAt(i);
-                                    }
-                                    blob = new Blob([ab], { type: mimeType });
-                                } catch (e) {
-                                    reject('فشل التحويل: ' + e.message);
-                                    return;
-                                }
+                    // Helper to process the blob result
+                    const processBlob = (blob) => {
+                        if (!blob) throw new Error('Blob creation failed');
+                        
+                        const resUrl = URL.createObjectURL(blob);
+                        const saved = ((file.size - blob.size) / file.size * 100).toFixed(0);
+                        
+                        resolve({
+                            blob: blob,
+                            url: resUrl,
+                            ext: outputExt,
+                            stats: {
+                                orig: self.formatBytes(file.size),
+                                new: self.formatBytes(blob.size),
+                                saved: saved > 0 ? saved : 0
                             }
-                            
-                            const resUrl = URL.createObjectURL(blob);
-                            const saved = ((file.size - blob.size) / file.size * 100).toFixed(0);
-                            
-                            resolve({
-                                blob: blob,
-                                url: resUrl,
-                                ext: outputExt,
-                                stats: {
-                                    orig: self.formatBytes(file.size),
-                                    new: self.formatBytes(blob.size),
-                                    saved: saved > 0 ? saved : 0
+                        });
+                    };
+
+                    // Robust Export Logic (Mobile Safe)
+                    try {
+                        if (cvs.toBlob) {
+                            cvs.toBlob(function(blob) {
+                                if (blob) {
+                                    processBlob(blob);
+                                } else {
+                                    // Fallback if toBlob returns null (some browsers do this on failure)
+                                    exportViaDataURL();
                                 }
-                            });
-                        }, outputFormat, s.q);
+                            }, outputFormat, s.q);
+                        } else {
+                            // Browser doesn't support toBlob
+                            exportViaDataURL();
+                        }
                     } catch (e) {
-                        reject('فشل التحويل: ' + e.message);
+                         // Catch any synchronous errors and try fallback
+                         console.warn('toBlob failed, trying fallback', e);
+                         exportViaDataURL();
+                    }
+
+                    function exportViaDataURL() {
+                         try {
+                            const dataUrl = cvs.toDataURL(outputFormat, s.q);
+                            
+                            // Check if result is valid
+                            if(dataUrl.length < 100 || dataUrl === 'data:,') {
+                                reject('Canvas extraction failed');
+                                return;
+                            }
+
+                            const byteString = atob(dataUrl.split(',')[1]);
+                            const mimeType = dataUrl.split(',')[0].split(':')[1].split(';')[0];
+                            const ab = new ArrayBuffer(byteString.length);
+                            const ia = new Uint8Array(ab);
+                            for (let i = 0; i < byteString.length; i++) {
+                                ia[i] = byteString.charCodeAt(i);
+                            }
+                            const blob = new Blob([ab], { type: mimeType });
+                            processBlob(blob);
+                        } catch (e) {
+                            reject('فشل التحويل (Fallback): ' + e.message);
+                        }
                     }
                 } catch (e) {
                     reject('خطأ في معالجة الصورة: ' + e.message);
